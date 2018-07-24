@@ -10,6 +10,7 @@ import horovod.torch as hvd
 import tensorboardX
 import os
 from tqdm import tqdm
+from time import time
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Example',
@@ -82,6 +83,7 @@ train_dataset = \
                              transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                   std=[0.229, 0.224, 0.225])
                          ]))
+train_data_len = len(train_dataset)
 # Horovod: use DistributedSampler to partition data among workers. Manually specify
 # `num_replicas=hvd.size()` and `rank=hvd.rank()`.
 train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -132,6 +134,9 @@ hvd.broadcast_parameters(model.state_dict(), root_rank=0)
 hvd.broadcast_optimizer_state(optimizer, root_rank=0)
 
 def train(epoch):
+    epoch_set_start = time()
+    each_epoch_communication_cost = 0
+    each_epoch_calculation_cost = 0
     model.train()
     train_sampler.set_epoch(epoch)
     train_loss = Metric('train_loss')
@@ -142,24 +147,41 @@ def train(epoch):
               disable=not verbose) as t:
         for batch_idx, (data, target) in enumerate(train_loader):
             adjust_learning_rate(epoch, batch_idx)
-
+            each_epoch_calculation_start = time()
             if args.cuda:
                 data, target = data.cuda(), target.cuda()
             optimizer.zero_grad()
             output = model(data)
             loss = F.cross_entropy(output, target)
             loss.backward()
+            each_epoch_calculation_end = time()
+            each_epoch_calculation_cost += each_epoch_calculation_end - each_epoch_calculation_start
+
+            each_epoch_communication_start = time()
             optimizer.step()
+            each_epoch_communication_end = time()
+            each_epoch_communication_cost += each_epoch_communication_end - each_epoch_communication_start
 
             train_loss.update(loss)
             train_accuracy.update(accuracy(output, target))
             t.set_postfix({'loss': train_loss.avg.item(),
                            'accuracy': 100. * train_accuracy.avg.item()})
             t.update(1)
+    epoch_set_end = time()
 
-    if log_writer:
+    epoch_time_cost = epoch_set_end - epoch_set_start
+    epoch_img_per_sec = train_data_len / epoch_time_cost
+    each_epoch_calculation_img_per_sec = train_data_len / each_epoch_calculation_cost
+    each_epoch_communication_img_per_sec = train_data_len / each_epoch_communication_cost
+    if log_writer: 
         log_writer.add_scalar('train/loss', train_loss.avg, epoch)
         log_writer.add_scalar('train/accuracy', train_accuracy.avg, epoch)
+        log_writer.add_scalar('epoch_full/time_cost', epoch_time_cost, epoch)
+        log_writer.add_scalar('epoch_full/img_per_sec', epoch_img_per_sec, epoch)
+        log_writer.add_scalar('epoch_calculation/time_cost', each_epoch_calculation_cost, epoch)
+        log_writer.add_scalar('epoch_calculation/img_per_sec', each_epoch_calculation_img_per_sec, epoch)
+        log_writer.add_scalar('epoch_communication/time_cost', each_epoch_communication_cost, epoch)
+        log_writer.add_scalar('epoch_communication/img_per_sec', each_epoch_communication_img_per_sec, epoch)
 
 
 def validate(epoch):
