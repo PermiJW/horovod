@@ -1,0 +1,47 @@
+successfully run on single machine:
+
+mpirun -np 4 \
+    -bind-to none -map-by slot \
+    -mca pml ob1 -mca btl ^openib \
+    python pytorch_imagenet_resnet50.py
+
+Note: do not set PATH and LD_LIBRARY_PATH wrong
+
+
+mpirun -np 8 \
+    -hostfile /home/ubuntu/hosts.txt\
+    python pytorch_imagenet_resnet50.py
+
+
+multi-machine:
+
+54.184.153.59:4
+
+mpirun -np 4 \
+    -H machine1\
+    -bind-to none -map-by slot \
+    -mca pml ob1 -mca btl ^openib \
+    python pytorch_imagenet_resnet50.py
+
+
+mpirun -np 8 \
+    -hostfile /home/ubuntu/hostflie \
+    -bind-to none -map-by slot \
+    -mca pml ob1 -mca btl ^openib \
+    python pytorch_imagenet_resnet50.py
+
+
+mpirun -np 8 \
+    -hostfile /home/ubuntu/hostflie \
+    -mca pml\
+    python pytorch_imagenet_resnet50.py
+
+
+mpirun -np 8 \
+    -host ubuntu@54.184.153.59 \
+    -bind-to none -map-by slot \
+    -mca pml ob1 -mca btl ^openib \
+    python pytorch_imagenet_resnet50.py
+
+
+

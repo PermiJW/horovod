@@ -1,0 +1,13 @@
+sudo apt-get install nfs-common
+sudo mkdir efs
+sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-98ea9731.efs.us-west-2.amazonaws.com:/ efs
+sudo apt-get install axel
+sudo mkdir nccl
+cd nccl
+sudo mkdir nccl_install
+cd nccl_install
+sudo axel https://developer.download.nvidia.com/compute/machine-learning/nccl/secure/v2.2/prod/nccl-repo-ubuntu1604-2.2.13-ga-cuda9.0_1-1_amd64.deb?Ez3frz9jkGD2gFpb8V_Tnh8drxs-TE2mOhoc8wJIQrdgPxGeGiyfEUoGhneTTcCAs_NbUijBc6mRjHJ9ixBI9HXiVfyFlvuV7uxdEgx6EkQwBs0_BcAvuXYvhuVLMdQcVOEAGOxNpVkL4y2TQiXvUNjDr0uUMmxmuS4M6KgLSysHK7uLrwQuXXM9U3ASPu0NoFoCf31m_pXlg2Qhm738Zk-8
+sudo dpkg -i nccl-repo-ubuntu1604-2.2.13-ga-cuda9.0_1-1_amd64.deb
+sudo apt-key add /var/nccl-repo-2.2.13-ga-cuda9.0/7fa2af80.pub
+sudo apt update
+sudo apt install libnccl2 libnccl-dev

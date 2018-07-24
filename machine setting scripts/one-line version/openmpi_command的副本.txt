@@ -1,0 +1,12 @@
+mkdir mpi
+cd mpi
+mkdir mpi_install
+cd mpi_install
+axel https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.1.tar.gz
+gunzip -c openmpi-3.1.1.tar.gz | tar xf -
+cd openmpi-3.1.1
+./configure --prefix=/usr/local
+make all install -j8
+export PATH="$PATH:/usr/local/mpi/bin"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/mpi/lib/"
+sudo ldconfig

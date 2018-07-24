@@ -1,0 +1,3 @@
+source activate pytorch_p36
+HOROVOD_GPU_ALLREDUCE=NCCL pip install --no-cache-dir horovod
+pip install cython
