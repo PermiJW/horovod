@@ -1,12 +1,4 @@
-1.put .pem on machine
-2.execute 'ssh-agent bash'
-3.execute 'ssh-add ~/new_ssh/megadata-OR.pem'
-4.execute first to avoid 'yes' permission
-
-
-
-another ssh setting:
-
+Have to do in manually
 
 
 cat .ssh/id_rsa.pub | ssh ubuntu@54.184.153.59  'cat >> .ssh/authorized_keys'
