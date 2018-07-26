@@ -1,3 +1,4 @@
+#make file to record time-costing
 from __future__ import print_function
 
 import argparse
@@ -11,6 +12,7 @@ import tensorboardX
 import os
 from tqdm import tqdm
 from time import time
+
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Example',
@@ -133,7 +135,11 @@ if resume_from_epoch > 0 and hvd.rank() == 0:
 hvd.broadcast_parameters(model.state_dict(), root_rank=0)
 hvd.broadcast_optimizer_state(optimizer, root_rank=0)
 
+
 def train(epoch):
+    #add a time limit to accelrate calculation
+    iter_num = 0
+    imgs_num = 0
     epoch_set_start = time()
     each_epoch_communication_cost = 0
     each_epoch_calculation_cost = 0
@@ -167,6 +173,26 @@ def train(epoch):
             t.set_postfix({'loss': train_loss.avg.item(),
                            'accuracy': 100. * train_accuracy.avg.item()})
             t.update(1)
+
+            #time update
+            iter_num += 1
+            if iter_num == 150:
+                imgs_num = iter_num * args.batch_size * hvd.size()
+                train_data_len = imgs_num
+                epoch_set_end = time()
+                epoch_time_cost = epoch_set_end - epoch_set_start
+                epoch_img_per_sec = train_data_len / epoch_time_cost
+                each_epoch_calculation_img_per_sec = train_data_len / each_epoch_calculation_cost
+                each_epoch_communication_img_per_sec = train_data_len / each_epoch_communication_cost
+                if log_writer: 
+                    log_writer.add_scalar('epoch_full/time_cost', epoch_time_cost, epoch)
+                    log_writer.add_scalar('epoch_full/img_per_sec', epoch_img_per_sec, epoch)
+                    log_writer.add_scalar('epoch_calculation/time_cost', each_epoch_calculation_cost, epoch)
+                    log_writer.add_scalar('epoch_calculation/img_per_sec', each_epoch_calculation_img_per_sec, epoch)
+                    log_writer.add_scalar('epoch_communication/time_cost', each_epoch_communication_cost, epoch)
+                    log_writer.add_scalar('epoch_communication/img_per_sec', each_epoch_communication_img_per_sec, epoch)
+                    return
+
     epoch_set_end = time()
 
     epoch_time_cost = epoch_set_end - epoch_set_start
@@ -263,5 +289,5 @@ class Metric(object):
 
 for epoch in range(resume_from_epoch, args.epochs):
     train(epoch)
-    validate(epoch)
-    save_checkpoint(epoch)
+    #validate(epoch)
+    #save_checkpoint(epoch)
